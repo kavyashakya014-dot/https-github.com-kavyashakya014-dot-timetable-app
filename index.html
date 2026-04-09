@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Timetable</title>
+
+<!-- PWA Support -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f172a;
+  color: white;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  padding: 20px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* Container */
+.container {
+  padding: 15px;
+}
+
+/* Card */
+.card {
+  background: #1e293b;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+/* Today highlight */
+.today {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 12px #22c55e;
+}
+
+/* Subjects */
+.subject {
+  padding: 10px;
+  margin: 6px 0;
+  background: #334155;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+/* Current period */
+.current {
+  background: #22c55e !important;
+  color: black;
+  font-weight: bold;
+}
+
+/* Top info */
+.top-info {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #020617;
+  border-radius: 10px;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📅 My Smart Timetable</div>
+
+<div class="container">
+
+<div class="top-info" id="info">
+⏳ Loading today's schedule...
+</div>
+
+<div id="timetable"></div>
+
+</div>
+
+<script>
+
+// TIMETABLE DATA
+const timetable = {
+  1: ["English","Physics","English","Maths","Biology","SST","IT","Hindi"],
+  2: ["Physics","SST","Hindi","Maths","Chemistry","IT","English","Maths"],
+  3: ["IT","Biology","Hindi","SST","Physics","SST","English","Maths"],
+  4: ["CCA","Biology","Hindi","Maths","P.D","SST","Edu Club","Edu Club"],
+  5: ["SST","Chemistry","English","Maths","Games","IT","English","Hindi"],
+  6: ["English","Chemistry","Hindi","Maths","Games","SST"]
+};
+
+// ⏰ EDIT THESE TIMES
+const timings = [
+  "08:00","08:40","09:20","10:00",
+  "10:40","11:20","12:00","12:40"
+];
+
+// Get today
+let today = new Date().getDay();
+if(today === 0) today = -1;
+
+const container = document.getElementById("timetable");
+const info = document.getElementById("info");
+
+if(timetable[today]){
+
+  let card = document.createElement("div");
+  card.classList.add("card","today");
+
+  timetable[today].forEach((sub,i)=>{
+    let div = document.createElement("div");
+    div.classList.add("subject");
+    div.innerText = `${timings[i]} - ${sub}`;
+    div.dataset.index = i;
+    card.appendChild(div);
+  });
+
+  container.appendChild(card);
+}
+
+// LIVE CURRENT PERIOD + NEXT PERIOD
+function update(){
+
+  let now = new Date();
+  let currentTime = now.getHours()*60 + now.getMinutes();
+
+  let currentSub = "None";
+  let nextSub = "None";
+
+  document.querySelectorAll(".subject").forEach((el,i)=>{
+    
+    let t = timings[i].split(":");
+    let start = parseInt(t[0])*60 + parseInt(t[1]);
+    let end = start + 40;
+
+    el.classList.remove("current");
+
+    if(currentTime >= start && currentTime < end){
+      el.classList.add("current");
+      currentSub = el.innerText;
+
+      // next
+      if(i+1 < timings.length){
+        nextSub = timings[i+1] + " - " + timetable[today][i+1];
+      }
+
+      // 🔔 Notification
+      if(Notification.permission === "granted"){
+        new Notification("📚 Current Period", {
+          body: currentSub
+        });
+      }
+    }
+  });
+
+  info.innerHTML = `
+  🟢 Current: ${currentSub} <br>
+  ⏭ Next: ${nextSub}
+  `;
+}
+
+// Ask notification permission
+if(Notification.permission !== "granted"){
+  Notification.requestPermission();
+}
+
+// Run every minute
+setInterval(update, 60000);
+update();
+
+</script>
+
+</body>
+</html>
